@@ -1,0 +1,45 @@
+# Xcode
+*.xcuserdata
+*.xcworkspace/xcuserdata
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+DerivedData/
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# macOS
+.DS_Store
+*.swp
+*~.nib
+*.orig
+
+# Playground
+timeline.xctimeline
+playground.xcworkspace
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Archives
+*.xcarchive
+
+# Code Injection
+iOSInjectionProject/
+
+# Dependencies
+*.dSYM.zip
+*.dSYM
+
+# Personal config files (license keys, dev team settings, etc.)
+DeveloperSettings.xcconfig
