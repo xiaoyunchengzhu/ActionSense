@@ -64,7 +64,17 @@ Filter by type, mode, or keyword. Search across up to 5000 entries. All stored l
 
 ## Screenshot
 
-> *Add a demo GIF here. Suggested: 30-second screen recording showing: copy URL → PasteFlow panel → open browser; copy color → preview → copy HEX; open history window → filter by type.*
+![PurePaste Demo](screenshot/demo.gif)
+
+### PasteFlow — Smart Detection
+
+| URL Detection | Color Preview | Math Calculation |
+|:---:|:---:|:---:|
+| ![URL](screenshot/url-detect.png) | ![Color](screenshot/color-detect.png) | ![Math](screenshot/math-detect.png) |
+
+### Intent History
+
+![History](screenshot/history.png)
 
 ## Installation
 

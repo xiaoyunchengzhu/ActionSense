@@ -64,7 +64,17 @@ PurePaste 是一个 macOS 菜单栏应用，常驻右上角，监听剪贴板变
 
 ## 截图
 
-> *此处放演示 GIF。建议 30 秒录屏：复制 URL → 弹窗 → 浏览器打开；复制颜色 → 面板预览 → 复制 HEX；打开历史窗口 → 按类型筛选。*
+![PurePaste 演示](screenshot/demo.gif)
+
+### PasteFlow 智能识别
+
+| URL 检测 | 颜色预览 | 数学计算 |
+|:---:|:---:|:---:|
+| ![URL](screenshot/url-detect.png) | ![颜色](screenshot/color-detect.png) | ![数学](screenshot/math-detect.png) |
+
+### 意图历史
+
+![历史](screenshot/history.png)
 
 ## 安装
 

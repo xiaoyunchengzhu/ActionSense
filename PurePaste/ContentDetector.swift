@@ -169,6 +169,7 @@ enum PasteFlowAction: CaseIterable {
 
 enum ContentDetector {
 
+
     /// 对剪贴板文本进行类型识别，返回第一个匹配的结果
     /// - Parameters:
     ///   - text: 剪贴板中的纯文本
@@ -190,8 +191,14 @@ enum ContentDetector {
         if let result = detectGeoCoordinate(trimmed)  { return result }
         if let result = detectDatetime(trimmed)  { return result }
 
-        // 富文本检测优先于地址
+        // 富文本检测
         if hasHTML { return .richHTML(trimmed, htmlData ?? Data()) }
+
+        // 数学二次检测：剔除不可见字符后重试（网页复制夹带零宽空格等场景）
+        let asciiClean = trimmed.unicodeScalars
+            .filter { $0.isASCII && $0.value >= 32 && $0.value < 127 }
+            .map { String(Character($0)) }.joined()
+        if asciiClean != trimmed, let result = detectMathExpression(asciiClean) { return result }
 
         if let result = detectAddress(trimmed)   { return result }
 
@@ -399,7 +406,7 @@ enum ContentDetector {
         guard trimmed.count >= 3 && trimmed.count <= 60 else { return nil }
 
         // 必须包含至少一个运算符
-        let hasOperator = trimmed.contains(where: { "+-*/^%".contains($0) })
+        let hasOperator = trimmed.contains(where: { "+-*/^%×÷∗·".contains($0) })
         guard hasOperator else { return nil }
 
         // 必须有数字
@@ -410,7 +417,8 @@ enum ContentDetector {
         let allowed = CharacterSet(charactersIn: "0123456789+-*/^%()., ")
         let disallowed = trimmed.unicodeScalars.filter { !allowed.contains($0) }
         // 允许不超过 15% 的非算术字符（处理如 "100元+50" 这类）
-        guard disallowed.count == 0 || Double(disallowed.count) / Double(trimmed.unicodeScalars.count) <= 0.15 else {
+        let ratio = trimmed.unicodeScalars.count > 0 ? Double(disallowed.count) / Double(trimmed.unicodeScalars.count) : 0
+        guard disallowed.count == 0 || ratio <= 0.15 else {
             return nil
         }
 
@@ -420,13 +428,15 @@ enum ContentDetector {
             .replacingOccurrences(of: "）", with: ")")
             .replacingOccurrences(of: "×", with: "*")
             .replacingOccurrences(of: "÷", with: "/")
+            .replacingOccurrences(of: "∗", with: "*")  // U+2217 math asterisk
+            .replacingOccurrences(of: "·", with: "*")  // U+00B7 middle dot
             .replacingOccurrences(of: "x", with: "*")
             .replacingOccurrences(of: "X", with: "*")
             .replacingOccurrences(of: ",", with: "") // 移除千分位逗号
             .replacingOccurrences(of: "^", with: "**") // ^ 转 Python-style 指数
             .replacingOccurrences(of: "％", with: "%")
 
-        // 使用 NSExpression 安全计算
+        // 使用递归下降解析器安全计算
         guard let result = evaluateMath(expr) else { return nil }
         guard result.isFinite && !result.isNaN else { return nil }
 
@@ -435,13 +445,20 @@ enum ContentDetector {
 
     /// 安全计算数学表达式（递归下降解析器，避免 NSExpression 的格式字符串陷阱）
     private static func evaluateMath(_ expression: String) -> Double? {
-        let expr = expression
+        // 过滤不可见 Unicode 字符（零宽空格、格式控制符等），保留算术字符
+        let filtered = expression.unicodeScalars.filter {
+            $0.isASCII && ($0.value >= 32 && $0.value < 127)
+        }.map { String(Character($0)) }.joined()
+        let expr = filtered
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "**", with: "^") // 统一指数符号
         // 只允许安全字符
         guard expr.allSatisfy({ c in
             c.isNumber || "+-*/%^().".contains(c)
-        }) else { return nil }
+        }) else {
+            let bad = expr.filter { !($0.isNumber || "+-*/%^().".contains($0)) }
+            return nil
+        }
 
         let tokens = tokenize(expr)
         guard !tokens.isEmpty else { return nil }
@@ -449,7 +466,7 @@ enum ContentDetector {
         var pos = 0
         guard let result = parseExpression(tokens, &pos) else { return nil }
         // 确保全部 token 被消费
-        guard pos == tokens.count else { return nil }
+        guard pos == tokens.count - 1 else { return nil }
 
         return result
     }
